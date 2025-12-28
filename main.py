@@ -26,6 +26,18 @@ app = FastAPI(
     root_path=os.environ.get("ROOT_PATH", "")
 )
 
+# Middleware: Strip ROOT_PATH from incoming requests if present
+@app.middleware("http")
+async def strip_path_prefix(request: Request, call_next):
+    root_path = os.environ.get("ROOT_PATH", "")
+    if root_path and request.url.path.startswith(root_path):
+        path = request.url.path[len(root_path):]
+        if not path.startswith("/"):
+            path = "/" + path
+        request.scope["path"] = path
+    response = await call_next(request)
+    return response
+
 # 3. Instrument FastAPI
 FastAPIInstrumentor.instrument_app(app)
 
