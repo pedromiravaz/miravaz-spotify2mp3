@@ -1,10 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 
 # Spotify Metadata
 class SongMetadata(BaseModel):
     title: str
     artist: str
+
     album: str
     duration_ms: int
     spotify_url: str
@@ -19,7 +20,7 @@ class YouTubeSearchResult(BaseModel):
 
 # API Request/Response
 class ConvertRequest(BaseModel):
-    spotify_url: str
+    spotify_url: str = Field(..., alias="url")
 
 class ConvertResponse(BaseModel):
     metadata: SongMetadata
