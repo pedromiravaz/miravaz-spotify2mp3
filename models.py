@@ -19,6 +19,12 @@ class YouTubeSearchResult(BaseModel):
     duration: int
 
 # API Request/Response
+class YouTubeSearchRequest(BaseModel):
+    query: str
+
+class YouTubeDownloadRequest(BaseModel):
+    video_url: str = Field(..., alias="url")
+
 class ConvertRequest(BaseModel):
     spotify_url: str = Field(..., alias="url")
 

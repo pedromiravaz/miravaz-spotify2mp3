@@ -40,7 +40,7 @@ async def strip_path_prefix(request: Request, call_next):
 
 from services.spotify_service import SpotifyService
 from services.youtube_service import YouTubeService
-from models import ConvertRequest, ConvertResponse, SongMetadata, YouTubeSearchResult
+from models import ConvertRequest, ConvertResponse, SongMetadata, YouTubeSearchResult, YouTubeSearchRequest, YouTubeDownloadRequest
 
 # 3. Instrument FastAPI
 FastAPIInstrumentor.instrument_app(app)
@@ -62,12 +62,12 @@ def get_spotify_metadata(request: ConvertRequest):
     return spotify_service.get_metadata(request.spotify_url)
 
 @app.post("/v1/youtube/search", response_model=YouTubeSearchResult)
-def search_youtube(query: str):
-    return youtube_service.search_video(query)
+def search_youtube(request: YouTubeSearchRequest):
+    return youtube_service.search_video(request.query)
 
 @app.post("/v1/youtube/download")
-def download_youtube_audio(video_url: str):
-    filename, b64_data = youtube_service.download_to_base64(video_url)
+def download_youtube_audio(request: YouTubeDownloadRequest):
+    filename, b64_data = youtube_service.download_to_base64(request.video_url)
     return {"filename": filename, "mp3_base64": b64_data}
 
 @app.post("/v1/convert", response_model=ConvertResponse)
