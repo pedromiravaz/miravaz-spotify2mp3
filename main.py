@@ -18,8 +18,13 @@ span_processor = BatchSpanProcessor(otlp_exporter)
 tracer_provider.add_span_processor(span_processor)
 trace.set_tracer_provider(tracer_provider)
 
+import os
+
 # 2. Initialize FastAPI
-app = FastAPI(title="Miravaz Spotify2MP3")
+app = FastAPI(
+    title="Miravaz Spotify2MP3",
+    root_path=os.environ.get("ROOT_PATH", "")
+)
 
 # 3. Instrument FastAPI
 FastAPIInstrumentor.instrument_app(app)
