@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+pydantic
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-fastapi
+opentelemetry-exporter-otlp
