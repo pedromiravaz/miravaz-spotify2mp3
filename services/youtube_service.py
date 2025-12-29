@@ -51,6 +51,7 @@ class YouTubeService:
                 'preferredcodec': 'mp3',
                 'preferredquality': '192',
             }],
+            'keepvideo': False,  # Ensure we don't keep the original webm/m4a
             'quiet': True,
             'noplaylist': True
         }
