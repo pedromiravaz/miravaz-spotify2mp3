@@ -11,7 +11,30 @@ class YouTubeService:
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir, exist_ok=True)
 
-    # ... search_video method remains unchanged ...
+    def search_video(self, query: str) -> YouTubeSearchResult:
+        ydl_opts = {
+            'format': 'bestaudio/best',
+            'noplaylist': True,
+            'quiet': True,
+            'default_search': 'ytsearch1'
+        }
+        
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            try:
+                info = ydl.extract_info(query, download=False)
+                if 'entries' in info:
+                    video = info['entries'][0]
+                else:
+                    video = info
+
+                return YouTubeSearchResult(
+                    video_id=video['id'],
+                    video_url=video['webpage_url'],
+                    title=video['title'],
+                    duration=video.get('duration', 0)
+                )
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"YouTube search failed: {str(e)}")
 
     def download_file(self, video_url: str, filename_base: str) -> str:
         """
