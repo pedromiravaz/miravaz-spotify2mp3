@@ -42,8 +42,16 @@ from services.spotify_service import SpotifyService
 from services.youtube_service import YouTubeService
 from models import ConvertRequest, ConvertResponse, SongMetadata, YouTubeSearchResult, YouTubeSearchRequest, YouTubeDownloadRequest
 
+from fastapi.staticfiles import StaticFiles
+
+# ... previous code ...
+
 # 3. Instrument FastAPI
 FastAPIInstrumentor.instrument_app(app)
+
+# Mount downloads directory
+os.makedirs("/app/downloads", exist_ok=True)
+app.mount("/downloads", StaticFiles(directory="/app/downloads"), name="downloads")
 
 # --- Services ---
 spotify_service = SpotifyService()
@@ -67,8 +75,10 @@ def search_youtube(request: YouTubeSearchRequest):
 
 @app.post("/v1/youtube/download")
 def download_youtube_audio(request: YouTubeDownloadRequest):
-    filename, b64_data = youtube_service.download_to_base64(request.video_url)
-    return {"filename": filename, "mp3_base64": b64_data}
+    # For direct download, we use a generic name or parse from video title if available
+    # Here we just use video ID as base
+    filename = youtube_service.download_file(request.video_url, "downloaded_audio")
+    return {"filename": filename, "download_url": f"/downloads/{filename}"}
 
 @app.post("/v1/convert", response_model=ConvertResponse)
 def convert_spotify_to_mp3(request: ConvertRequest):
@@ -80,11 +90,18 @@ def convert_spotify_to_mp3(request: ConvertRequest):
     yt_result = youtube_service.search_video(query)
     
     # 3. Download
-    filename, b64_data = youtube_service.download_to_base64(yt_result.video_url)
+    filename_base = f"{metadata.artist} - {metadata.title}"
+    filename = youtube_service.download_file(yt_result.video_url, filename_base)
     
+    # Construct external URL (assuming service is behind a proxy like /spotify2mp3)
+    # The client will prepend the host. If running behind /spotify2mp3, relative URL is best.
+    # But for full absolute URL we might need request.base_url or similar.
+    # Let's return the absolute path from the service root.
+    download_url = f"/downloads/{filename}"
+
     return ConvertResponse(
         metadata=metadata,
         youtube_url=yt_result.video_url,
-        mp3_base64=b64_data,
+        download_url=download_url,
         filename=filename
     )

@@ -31,5 +31,5 @@ class ConvertRequest(BaseModel):
 class ConvertResponse(BaseModel):
     metadata: SongMetadata
     youtube_url: str
-    mp3_base64: str  # The actual file content
+    download_url: str  # URL to download the file
     filename: str

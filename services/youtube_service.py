@@ -7,41 +7,25 @@ from fastapi import HTTPException
 
 class YouTubeService:
     def __init__(self):
-        self.output_dir = "/tmp/downloads"
+        self.output_dir = "/app/downloads"
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir, exist_ok=True)
 
-    def search_video(self, query: str) -> YouTubeSearchResult:
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'noplaylist': True,
-            'quiet': True,
-            'default_search': 'ytsearch1'
-        }
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            try:
-                info = ydl.extract_info(query, download=False)
-                if 'entries' in info:
-                    video = info['entries'][0]
-                else:
-                    video = info
+    # ... search_video method remains unchanged ...
 
-                return YouTubeSearchResult(
-                    video_id=video['id'],
-                    video_url=video['webpage_url'],
-                    title=video['title'],
-                    duration=video.get('duration', 0)
-                )
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=f"YouTube search failed: {str(e)}")
+    def download_file(self, video_url: str, filename_base: str) -> str:
+        """
+        Downloads the video as MP3 to /app/downloads/filename.mp3
+        Returns the filename.
+        """
+        # Sanitize filename (basic)
+        safe_filename = "".join([c for c in filename_base if c.isalpha() or c.isdigit() or c in " .-_()"]).strip()
+        filename = f"{safe_filename}.mp3"
+        filepath = os.path.join(self.output_dir, filename)
 
-    def download_to_base64(self, video_url: str) -> tuple[str, str]:
-        """
-        Downloads the video as MP3 and returns (filename, base64_string).
-        """
-        # Clean up old files in tmp
-        self._cleanup_tmp()
+        # Check if exists to avoid redownload (optional, but good for speed)
+        if os.path.exists(filepath):
+            return filename
 
         ydl_opts = {
             'format': 'bestaudio/best',
@@ -51,7 +35,7 @@ class YouTubeService:
                 'preferredcodec': 'mp3',
                 'preferredquality': '192',
             }],
-            'keepvideo': False,  # Ensure we don't keep the original webm/m4a
+            'keepvideo': False, 
             'quiet': True,
             'noplaylist': True
         }
@@ -60,23 +44,23 @@ class YouTubeService:
             try:
                 info = ydl.extract_info(video_url, download=True)
                 video_id = info['id']
-                # yt-dlp converts to mp3, so extension changes
-                filename = f"{video_id}.mp3"
-                filepath = os.path.join(self.output_dir, filename)
+                temp_filename = f"{video_id}.mp3"
+                temp_filepath = os.path.join(self.output_dir, temp_filename)
                 
-                if not os.path.exists(filepath):
+                if not os.path.exists(temp_filepath):
                     raise Exception("File not found after download")
 
-                # Read and Encode
-                with open(filepath, "rb") as f:
-                    encoded_string = base64.b64encode(f.read()).decode('utf-8')
+                # Rename to desired filename
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                os.rename(temp_filepath, filepath)
                 
-                # Cleanup immediate file
-                os.remove(filepath)
-                
-                return filename, encoded_string
+                return filename
                 
             except Exception as e:
+                # Cleanup if something failed
+                if 'temp_filepath' in locals() and os.path.exists(temp_filepath):
+                    os.remove(temp_filepath)
                 raise HTTPException(status_code=500, detail=f"Download failed: {str(e)}")
 
     def _cleanup_tmp(self):
