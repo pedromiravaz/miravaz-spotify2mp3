@@ -81,7 +81,7 @@ def download_youtube_audio(request: YouTubeDownloadRequest):
     return {"filename": filename, "download_url": f"/downloads/{filename}"}
 
 @app.post("/v1/convert", response_model=ConvertResponse)
-def convert_spotify_to_mp3(request: ConvertRequest):
+def convert_spotify_to_mp3(request: ConvertRequest, req: Request):
     # 1. Get Metadata
     metadata = spotify_service.get_metadata(request.spotify_url)
     
@@ -93,11 +93,18 @@ def convert_spotify_to_mp3(request: ConvertRequest):
     filename_base = f"{metadata.artist} - {metadata.title}"
     filename = youtube_service.download_file(yt_result.video_url, filename_base)
     
-    # Construct external URL (assuming service is behind a proxy like /spotify2mp3)
-    # The client will prepend the host. If running behind /spotify2mp3, relative URL is best.
-    # But for full absolute URL we might need request.base_url or similar.
-    # Let's return the absolute path from the service root.
-    download_url = f"/downloads/{filename}"
+    # Construct external absolute URL
+    scheme = req.url.scheme
+    host = req.headers.get("host", "localhost")
+    root_path = os.environ.get("ROOT_PATH", "")
+    
+    # Ensure root_path formats correctly (no trailing slash, leading slash handled by join or f-string logic)
+    if root_path and not root_path.startswith("/"):
+        root_path = "/" + root_path
+    if root_path and root_path.endswith("/"):
+        root_path = root_path[:-1]
+
+    download_url = f"{scheme}://{host}{root_path}/downloads/{filename}"
 
     return ConvertResponse(
         metadata=metadata,
