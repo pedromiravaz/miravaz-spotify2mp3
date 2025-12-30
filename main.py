@@ -74,11 +74,12 @@ def search_youtube(request: YouTubeSearchRequest):
     return youtube_service.search_video(request.query)
 
 @app.post("/v1/youtube/download")
-def download_youtube_audio(request: YouTubeDownloadRequest):
+def download_youtube_audio(request: YouTubeDownloadRequest, req: Request):
     # For direct download, we use a generic name or parse from video title if available
     # Here we just use video ID as base
     filename = youtube_service.download_file(request.video_url, "downloaded_audio")
-    return {"filename": filename, "download_url": f"/downloads/{filename}"}
+    download_url = construct_download_url(req, filename)
+    return {"filename": filename, "download_url": download_url}
 
 @app.post("/v1/convert", response_model=ConvertResponse)
 def convert_spotify_to_mp3(request: ConvertRequest, req: Request):
@@ -93,7 +94,16 @@ def convert_spotify_to_mp3(request: ConvertRequest, req: Request):
     filename_base = f"{metadata.artist} - {metadata.title}"
     filename = youtube_service.download_file(yt_result.video_url, filename_base)
     
-    # Construct external absolute URL
+    download_url = construct_download_url(req, filename)
+
+    return ConvertResponse(
+        metadata=metadata,
+        youtube_url=yt_result.video_url,
+        download_url=download_url,
+        filename=filename
+    )
+
+def construct_download_url(req: Request, filename: str) -> str:
     scheme = req.url.scheme
     host = req.headers.get("host", "localhost")
     root_path = os.environ.get("ROOT_PATH", "")
@@ -104,11 +114,4 @@ def convert_spotify_to_mp3(request: ConvertRequest, req: Request):
     if root_path and root_path.endswith("/"):
         root_path = root_path[:-1]
 
-    download_url = f"{scheme}://{host}{root_path}/downloads/{filename}"
-
-    return ConvertResponse(
-        metadata=metadata,
-        youtube_url=yt_result.video_url,
-        download_url=download_url,
-        filename=filename
-    )
+    return f"{scheme}://{host}{root_path}/downloads/{filename}"
