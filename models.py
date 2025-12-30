@@ -5,10 +5,10 @@ from typing import Optional, List
 class SongMetadata(BaseModel):
     title: str
     artist: str
-
     album: str
     duration_ms: int
-    spotify_url: str
+    spotify_url: Optional[str] = None
+    tidal_url: Optional[str] = None
     album_art_url: Optional[str] = None
 
 # YouTube Search
@@ -26,7 +26,10 @@ class YouTubeDownloadRequest(BaseModel):
     video_url: str = Field(..., alias="url")
 
 class ConvertRequest(BaseModel):
-    spotify_url: str = Field(..., alias="url")
+    url: str
+
+class TidalRequest(BaseModel):
+    url: str
 
 class ConvertResponse(BaseModel):
     metadata: SongMetadata

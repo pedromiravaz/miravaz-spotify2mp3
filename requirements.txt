@@ -7,3 +7,4 @@ opentelemetry-instrumentation-fastapi
 opentelemetry-exporter-otlp
 spotipy
 yt-dlp
+requests
